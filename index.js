@@ -23,6 +23,23 @@ const client = new MongoClient(uri, {
   }
 });
 
+const classCollection = client.db('expressMusicAcademy').collection('popularClasses');
+
+
+app.get('/class', async (req, res) => {
+    const cursor = classCollection.find();
+    const result = await cursor.toArray();
+    res.send(result);
+  })
+
+
+
+
+
+
+
+
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
