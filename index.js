@@ -26,6 +26,7 @@ const client = new MongoClient(uri, {
 const classCollection = client.db('expressMusicAcademy').collection('popularClasses');
 const instructorCollection = client.db('expressMusicAcademy').collection('popularInstructors');
 const classesCollection = client.db('expressMusicAcademy').collection('classes');
+const selectedCollection = client.db('expressMusicAcademy').collection('selected');
 
 
 app.get('/class', async (req, res) => {
@@ -43,6 +44,12 @@ app.get('/instructors', async (req, res) => {
 app.get('/classes', async (req, res) => {
     const cursor = classesCollection.find();
     const result = await cursor.toArray();
+    res.send(result);
+  })
+  
+app.post('/selected', async (req, res) => {
+    const p = req.body;
+    const result = await selectedCollection.insertOne(p);
     res.send(result);
   })
 
