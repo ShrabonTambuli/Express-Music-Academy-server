@@ -1,5 +1,5 @@
 const express = require('express');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
 const app = express();
 require('dotenv').config()
@@ -64,6 +64,12 @@ app.post('/selected', async (req, res) => {
     res.send(result);
   })
 
+  app.delete('/selected/:id', async (req, res) =>{
+    const id = req.params.id;
+    const query = {_id: new ObjectId(id)};
+    const result = await selectedCollection.deleteOne(query);
+    res.send(result);
+  })
 
 
 
