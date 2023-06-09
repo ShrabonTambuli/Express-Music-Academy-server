@@ -1,6 +1,7 @@
 const express = require('express');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const app = express();
 require('dotenv').config()
 const port = process.env.PORT || 5000;
@@ -31,6 +32,13 @@ const usersCollection = client.db('expressMusicAcademy').collection('users');
 
 
 
+
+app.post('/jwt', (req, res) => {
+  const user = req.body;
+  const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '24h' })
+
+  res.send({ token })
+})
 
 app.get('/class', async (req, res) => {
   const cursor = classCollection.find();
