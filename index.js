@@ -30,16 +30,7 @@ const selectedCollection = client.db('expressMusicAcademy').collection('selected
 const usersCollection = client.db('expressMusicAcademy').collection('users');
 
 
-app.post('/users', async (req, res) => {
-  const user = req.body;
-  const query = { email: user.email }
-  const existingUser = await usersCollection.findOne(query);
-  if (existingUser) {
-    return res.send({ message: 'user already existing' })
-  }
-  const result = await usersCollection.insertOne(user);
-  res.send(result);
-});
+
 
 app.get('/class', async (req, res) => {
   const cursor = classCollection.find();
@@ -70,11 +61,27 @@ app.get('/selected', async (req, res) => {
   res.send(result);
 })
 
+app.get('/users', async (req, res) => {
+  const result = await usersCollection.find().toArray();
+  res.send(result);
+});
+
 app.post('/selected', async (req, res) => {
   const p = req.body;
   const result = await selectedCollection.insertOne(p);
   res.send(result);
 })
+
+app.post('/users', async (req, res) => {
+  const user = req.body;
+  const query = { email: user.email }
+  const existingUser = await usersCollection.findOne(query);
+  if (existingUser) {
+    return res.send({ message: 'user already existing' })
+  }
+  const result = await usersCollection.insertOne(user);
+  res.send(result);
+});
 
 app.delete('/selected/:id', async (req, res) => {
   const id = req.params.id;
