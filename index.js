@@ -1,10 +1,12 @@
 const express = require('express');
+require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const app = express();
-require('dotenv').config()
 const port = process.env.PORT || 5000;
+
+//middleware
 
 app.use(cors());
 app.use(express.json());
@@ -14,7 +16,7 @@ const verifyJWT = (req, res, next) => {
   if (!authorization) {
     return res.status(401).send({ error: true, message: 'unauthorized access' });
   }
-  // bearer token
+
   const token = authorization.split(' ')[1];
 
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
@@ -57,6 +59,31 @@ app.post('/jwt', (req, res) => {
   res.send({ token })
 })
 
+
+// verifyAmin
+
+const verifyAdmin = async (req, res, next) => {
+  const email = req.decoded.email;
+  const query = { email: email }
+  const user = await usersCollection.findOne(query);
+  if (user?.role !== 'admin') {
+    return res.status(403).send({ error: true, message: 'forbidden message' });
+  }
+  next();
+}
+
+// verifyInstructor
+
+// const verifyInstructor = async (req, res, next) => {
+//   const email = req.decoded.email;
+//   const query = { email: email }
+//   const user = await usersCollection.findOne(query);
+//   if (user?.role !== 'instructor') {
+//     return res.status(403).send({ error: true, message: 'forbidden message' });
+//   }
+//   next();
+// }
+
 app.get('/class', async (req, res) => {
   const cursor = classCollection.find();
   const result = await cursor.toArray();
@@ -76,21 +103,39 @@ app.get('/classes', async (req, res) => {
 })
 
 
-app.get('/selected', async (req, res) => {
+app.get('/selected', verifyJWT, async (req, res) => {
   const email = req.query.email;
   if (!email) {
     res.send([]);
+  }
+  const decodedEmail = req.decoded.email;
+  if (email !== decodedEmail) {
+    return res.status(403).send({ error: true, message: 'forbidden access' })
   }
   const query = { email: email };
   const result = await selectedCollection.find(query).toArray();
   res.send(result);
 })
 
-app.get('/users', async (req, res) => {
+app.get('/users', verifyJWT, verifyAdmin,  async (req, res) => {
   const result = await usersCollection.find().toArray();
   res.send(result);
 });
 
+// admin
+
+app.get('/users/admin/:email', verifyJWT, async (req, res) => {
+  const email = req.params.email;
+
+  if (req.decoded.email !== email) {
+    res.send({ admin: false })
+  }
+
+  const query = { email: email }
+  const user = await usersCollection.findOne(query);
+  const result = { admin: user?.role === 'admin' }
+  res.send(result);
+})
 
 app.patch('/users/admin/:id', async (req, res) => {
   const id = req.params.id;
@@ -106,11 +151,42 @@ app.patch('/users/admin/:id', async (req, res) => {
 
 })
 
+//instructor
+
+app.get('/users/instructor/:email', verifyJWT, async (req, res) => {
+  const email = req.params.email;
+
+  if (req.decoded.email !== email) {
+    res.send({ instructor: false })
+  }
+
+  const query = { email: email }
+  const user = await usersCollection.findOne(query);
+  const result = { instructor: user?.role === 'instructor' }
+  res.send(result);
+})
+
+
+app.patch('/users/instructor/:id', async (req, res) => {
+  const id = req.params.id;
+  const filter = { _id: new ObjectId(id) };
+  const updateDoc = {
+    $set: {
+      role: 'instructor'
+    },
+  };
+
+  const result = await usersCollection.updateOne(filter, updateDoc);
+  res.send(result);
+
+})
+
 app.post('/selected', async (req, res) => {
   const p = req.body;
   const result = await selectedCollection.insertOne(p);
   res.send(result);
 })
+
 
 app.post('/users', async (req, res) => {
   const user = req.body;
