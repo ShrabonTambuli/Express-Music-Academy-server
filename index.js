@@ -74,17 +74,7 @@ const verifyAdmin = async (req, res, next) => {
   next();
 }
 
-// verifyInstructor
 
-// const verifyInstructor = async (req, res, next) => {
-//   const email = req.decoded.email;
-//   const query = { email: email }
-//   const user = await usersCollection.findOne(query);
-//   if (user?.role !== 'instructor') {
-//     return res.status(403).send({ error: true, message: 'forbidden message' });
-//   }
-//   next();
-// }
 
 app.get('/class', async (req, res) => {
   const cursor = classCollection.find();
@@ -98,9 +88,10 @@ app.get('/instructors', async (req, res) => {
   res.send(result);
 })
 
+
+
 app.get('/classes', async (req, res) => {
-  const cursor = classesCollection.find();
-  const result = await cursor.toArray();
+  const result = await classesCollection.find().toArray();
   res.send(result);
 })
 
@@ -126,7 +117,7 @@ app.get('/selected/:id', async (req, res) => {
   res.send(result);
 })
 
-app.get('/users', verifyJWT, verifyAdmin,  async (req, res) => {
+app.get('/users', verifyJWT, verifyAdmin, async (req, res) => {
   const result = await usersCollection.find().toArray();
   res.send(result);
 });
@@ -160,6 +151,33 @@ app.patch('/users/admin/:id', async (req, res) => {
 
 })
 
+app.put('/classes/:id', async (req, res) => {
+  const id = req.params.id;
+  const query = { _id: new ObjectId(id) }
+  const updateStatus = {
+    $set: {
+      status: "Approve"
+    }
+  }
+
+  const result = await classesCollection.updateOne(query, updateStatus)
+  res.json(result)
+})
+
+app.put('/classesFeedback/:id', async (req, res) => {
+  const id = req.params.id;
+  const filter = { _id: new ObjectId(id) }
+  const options = { upsert: true };
+  const update = req.body;
+  const classFd = {
+    $set: {
+      feedback: update.feedback
+    }
+  }
+  const result = await classesCollection.updateOne(filter, classFd, options)
+  res.send(result);
+})
+
 //instructor
 
 app.get('/users/instructor/:email', verifyJWT, async (req, res) => {
@@ -172,6 +190,20 @@ app.get('/users/instructor/:email', verifyJWT, async (req, res) => {
   const query = { email: email }
   const user = await usersCollection.findOne(query);
   const result = { instructor: user?.role === 'instructor' }
+  res.send(result);
+})
+
+app.get('/myClasses', verifyJWT, async (req, res) => {
+  const email = req.query.email;
+  if (!email) {
+    res.send([]);
+  }
+  const decodedEmail = req.decoded.email;
+  if (email !== decodedEmail) {
+    return res.status(403).send({ error: true, message: 'forbidden access' })
+  }
+  const query = { email: email };
+  const result = await classesCollection.find(query).toArray();
   res.send(result);
 })
 
@@ -208,6 +240,12 @@ app.post('/users', async (req, res) => {
   res.send(result);
 });
 
+app.post('/classes', async (req, res) => {
+  const addProduct = req.body;
+  const result = await classesCollection.insertOne(addProduct);
+  res.send(result);
+})
+
 app.delete('/selected/:id', async (req, res) => {
   const id = req.params.id;
   const query = { _id: new ObjectId(id) };
@@ -217,12 +255,12 @@ app.delete('/selected/:id', async (req, res) => {
 
 // create payment
 
-app.post('/create-payment-intent', async(req, res)=>{
-  const {price} = req.body;
-  const amount = price*100;
+app.post('/create-payment-intent', async (req, res) => {
+  const { price } = req.body;
+  const amount = price * 100;
   const paymentIntent = await stripe.paymentIntents.create({
     amount: amount,
-    currency:"usd",
+    currency: "usd",
     payment_method_types: ['card']
 
   });
@@ -238,9 +276,23 @@ app.post('/payments/:id', async (req, res) => {
   const query = { _id: new ObjectId(id) };
   const deleteResult = await selectedCollection.deleteOne(query)
 
-  res.send({insertResult, deleteResult});
+  res.send({ insertResult, deleteResult });
 })
 
+
+app.get('/payments', verifyJWT, async (req, res) => {
+  const email = req.query.email;
+  if (!email) {
+    res.send([]);
+  }
+  const decodedEmail = req.decoded.email;
+  if (email !== decodedEmail) {
+    return res.status(403).send({ error: true, message: 'forbidden access' })
+  }
+  const query = { email: email };
+  const result = await paymentsCollection.find(query).toArray();
+  res.send(result);
+})
 
 
 
@@ -251,7 +303,7 @@ app.post('/payments/:id', async (req, res) => {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+     client.connect();
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
