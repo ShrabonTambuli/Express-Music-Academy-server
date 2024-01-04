@@ -106,6 +106,12 @@ async function run() {
     })
 
 
+    app.get('/payment', async (req, res) => {
+      const result = await paymentsCollection.find().toArray();
+      res.send(result);
+    })
+
+
     app.get('/selected', verifyJWT, async (req, res) => {
       const email = req.query.email;
       if (!email) {
