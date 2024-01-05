@@ -91,6 +91,12 @@ async function run() {
       const result = await cursor.toArray();
       res.send(result);
     })
+    
+    app.get('/users', async (req, res) => {
+      const cursor =  usersCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    })
 
     app.get('/instructors', async (req, res) => {
       const cursor = instructorCollection.find();
